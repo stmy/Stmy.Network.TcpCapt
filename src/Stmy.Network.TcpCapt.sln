@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stmy.Network.TcpCapt", "Stmy.Network.TcpCapt\Stmy.Network.TcpCapt.csproj", "{3E1AA67E-DCDE-438E-B75C-5D297F3C0AD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stmy.Network.TcpCapt.Tests", "Stmy.Network.TcpCapt.Tests\Stmy.Network.TcpCapt.Tests.csproj", "{B97F05D3-596D-4430-80D2-AC64EDE9074D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3E1AA67E-DCDE-438E-B75C-5D297F3C0AD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E1AA67E-DCDE-438E-B75C-5D297F3C0AD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E1AA67E-DCDE-438E-B75C-5D297F3C0AD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E1AA67E-DCDE-438E-B75C-5D297F3C0AD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B97F05D3-596D-4430-80D2-AC64EDE9074D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B97F05D3-596D-4430-80D2-AC64EDE9074D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B97F05D3-596D-4430-80D2-AC64EDE9074D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B97F05D3-596D-4430-80D2-AC64EDE9074D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
