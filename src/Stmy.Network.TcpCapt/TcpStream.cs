@@ -22,6 +22,9 @@ namespace Stmy.Network.TcpCapt
         readonly AutoResetEvent timeoutEvent;
         readonly object lockObj = new object();
 
+        internal int? FragmentTimeout { get; set; }
+        public event EventHandler TimedOut;
+
         public TcpStream()
         {
             nextSeq = 0;
@@ -148,9 +151,11 @@ namespace Stmy.Network.TcpCapt
         {
             Trace.WriteLine($"Waiting for packet: {nextSeq}");
             timeoutEvent.Reset();
-            if (!timeoutEvent.WaitOne(1000)) // TODO: Set timeout based on RTT
+            if (!timeoutEvent.WaitOne(FragmentTimeout ?? 1000)) // TODO: Set timeout based on RTT
             {
                 Trace.WriteLine($"Timed out for: {nextSeq}");
+
+                TimedOut?.Invoke(this, EventArgs.Empty);
 
                 lock (lockObj)
                 {
