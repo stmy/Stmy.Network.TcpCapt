@@ -21,42 +21,50 @@ namespace Stmy.Network.TcpCapt.CapturingServices
             0x08, 0xDD                          // Type = IPv6 (0x08DD)
         };
 
-        public Socket SocketV4 { get; }
-        public Socket SocketV6 { get; }
-        byte[] bufferV4;
-        byte[] bufferV6;
+        readonly Socket socket;
+        readonly byte[] buffer;
+        readonly byte[] fakeEthernetHeader;
 
         public event EventHandler<PacketCapturedEventArgs> Captured;
 
         public PromiscuousSocketCapturer(IPAddress address)
         {
+            if (address == null) { throw new ArgumentNullException(nameof(address)); }
+            if (!(address.AddressFamily == AddressFamily.InterNetwork &&
+                  address.AddressFamily == AddressFamily.InterNetworkV6))
+            {
+                throw new ArgumentException($"Only IPv4/IPv6 is supported", nameof(address));
+            }
 
-            bufferV4 = new byte[65535];
-            SocketV4 = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.IP);
-            SocketV4.Bind(new IPEndPoint(address, 0));
-            SocketV4.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true);
-            SocketV4.IOControl(IOControlCode.ReceiveAll, new byte[] { 1, 0, 0, 0 }, new byte[] { 0 });
-            SocketV4.BeginReceive(bufferV4, 0, bufferV4.Length, SocketFlags.None, new AsyncCallback(ReceiveCallbackV4), null);
+            if (address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                fakeEthernetHeader = FakeEthernetHeaderV4;
+                buffer = new byte[65535];
+            }
+            else
+            {
+                fakeEthernetHeader = FakeEthernetHeaderV6;
+                buffer = new byte[65535 + 40];
+            }
 
-            bufferV6 = new byte[65535 + 40]; // not support jumbogram
-            SocketV6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Raw, ProtocolType.IP);
-            SocketV6.Bind(new IPEndPoint(address, 0));
-            SocketV6.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true);
-            SocketV6.IOControl(IOControlCode.ReceiveAll, new byte[] { 1, 0, 0, 0 }, new byte[] { 0 });
-            SocketV6.BeginReceive(bufferV6, 0, bufferV6.Length, SocketFlags.None, new AsyncCallback(ReceiveCallbackV6), null);
+            socket = new Socket(address.AddressFamily, SocketType.Raw, ProtocolType.IP);
+            socket.Bind(new IPEndPoint(address, 0));
+            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true);
+            socket.IOControl(IOControlCode.ReceiveAll, new byte[] { 1, 0, 0, 0 }, new byte[] { 0 });
+            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
         }
 
-        void ReceiveCallbackV4(IAsyncResult ar)
+        void ReceiveCallback(IAsyncResult ar)
         {
             try
             {
-                var bytesReceived = SocketV4.EndReceive(ar);
+                var bytesReceived = socket.EndReceive(ar);
                 if (bytesReceived > 0)
                 {
                     // Prepend fake ethernet header
-                    byte[] packetData = new byte[FakeEthernetHeaderV4.Length + bytesReceived];
-                    Array.Copy(FakeEthernetHeaderV4, packetData, FakeEthernetHeaderV4.Length);
-                    Array.Copy(bufferV4, 0, packetData, FakeEthernetHeaderV4.Length, bytesReceived);
+                    byte[] packetData = new byte[fakeEthernetHeader.Length + bytesReceived];
+                    Array.Copy(fakeEthernetHeader, packetData, fakeEthernetHeader.Length);
+                    Array.Copy(buffer, 0, packetData, fakeEthernetHeader.Length, bytesReceived);
                     
                     Captured?.Invoke(this, new PacketCapturedEventArgs(Packet.ParsePacket(LinkLayers.Ethernet, packetData)));
                 }
@@ -66,41 +74,9 @@ namespace Stmy.Network.TcpCapt.CapturingServices
             {
                 try
                 {
-                    if (SocketV4 != null)
+                    if (socket != null)
                     {
-                        SocketV4.BeginReceive(bufferV4, 0, bufferV4.Length, SocketFlags.None, new AsyncCallback(ReceiveCallbackV4), null);
-                    }
-                }
-                catch { }
-            }
-        }
-
-        void ReceiveCallbackV6(IAsyncResult ar)
-        {
-            try
-            {
-                var bytesReceived = SocketV6.EndReceive(ar);
-                if (bytesReceived > 0)
-                {
-                    // Prepend fake ethernet header
-                    byte[] packetData = new byte[FakeEthernetHeaderV6.Length + bytesReceived];
-                    Array.Copy(FakeEthernetHeaderV6, packetData, FakeEthernetHeaderV6.Length);
-                    Array.Copy(bufferV6, 0, packetData, FakeEthernetHeaderV6.Length, bytesReceived);
-
-                    Captured?.Invoke(this, new PacketCapturedEventArgs(Packet.ParsePacket(LinkLayers.Ethernet, packetData)));
-                }
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-                try
-                {
-                    if (SocketV6 != null)
-                    {
-                        SocketV6.BeginReceive(bufferV6, 0, bufferV6.Length, SocketFlags.None, new AsyncCallback(ReceiveCallbackV6), null);
+                        socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
                     }
                 }
                 catch { }
@@ -109,10 +85,8 @@ namespace Stmy.Network.TcpCapt.CapturingServices
 
         public void Dispose()
         {
-            SocketV4.Close();
-            SocketV4.Dispose();
-            SocketV6.Close();
-            SocketV6.Dispose();
+            socket.Close();
+            socket.Dispose();
         }
     }
 }
