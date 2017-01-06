@@ -142,5 +142,22 @@ namespace Stmy.Network.TcpCapt.Tests
                 testStrings[0] + testStrings[2],
                 result);
         }
+
+        [TestMethod]
+        public void TestFragmentedSequenceWithEdgeSN()
+        {
+            var testStrings = new[] { "hello", "capturing", "world" };
+            var packets = CreateSequentialPacket(testStrings, uint.MaxValue - 5);
+
+            var stream = new TcpStream();
+            stream.Process(packets[0]);
+            stream.Process(packets[2]);
+            stream.Process(packets[1]);
+
+            var reader = new StreamReader(stream);
+            var result = reader.ReadToEnd();
+
+            Assert.AreEqual(string.Join("", testStrings), result);
+        }
     }
 }

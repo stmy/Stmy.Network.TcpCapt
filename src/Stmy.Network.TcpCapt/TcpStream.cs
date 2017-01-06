@@ -83,28 +83,21 @@ namespace Stmy.Network.TcpCapt
 
         int CalculateOffset(TcpPacket packet)
         {
-            const uint Threshold = uint.MaxValue / 2;
+            long offset = packet.SequenceNumber - (long)nextSeq;
 
-            if (packet.SequenceNumber < nextSeq)
+            if (Math.Abs(offset) <= int.MaxValue)
             {
-                if (nextSeq - packet.SequenceNumber > Threshold)
-                {
-                    return (int)(uint.MaxValue - nextSeq + packet.SequenceNumber);
-                }
-                else
-                {
-                    return (int)-(nextSeq - packet.SequenceNumber);
-                }
+                return (int)offset;
             }
-            else
+            else // straddles uint boundary
             {
-                if (packet.SequenceNumber - nextSeq > Threshold)
+                if (offset < 0)
                 {
-                    return -(int)(uint.MaxValue - packet.SequenceNumber + nextSeq);
+                    return (int)(offset + uint.MaxValue);
                 }
                 else
                 {
-                    return (int)(packet.SequenceNumber - nextSeq);
+                    return (int)(offset - uint.MaxValue);
                 }
             }
         }
