@@ -13,6 +13,9 @@ namespace Stmy.Network.TcpCapt
         List<Connection> connections;
         List<SocketOwnerInfo> socketInfoes;
 
+        public event EventHandler<ConnectionOpenedEventArgs> ConnectionOpened;
+        public event EventHandler<PacketProcessedEventArgs> PacketProcessed;
+
         public TcpCapturer(int targetProcessId, ICapturingService service)
         {
             if (service == null) { throw new ArgumentNullException(nameof(service)); }
@@ -69,10 +72,12 @@ namespace Stmy.Network.TcpCapt
                 connections.Add(connection);
                 // TODO: Add functionality to remove connections which is closed and no longer used
 
-                //ConnectionOpened?.Invoke(this, new TcpConnectionEventArgs(connection));
+                ConnectionOpened?.Invoke(this, new ConnectionOpenedEventArgs(connection));
             }
 
             connection.Process(packet);
+
+            PacketProcessed?.Invoke(this, new PacketProcessedEventArgs(source, dest, direction, connection));
         }
 
         bool TryGetDirection(TcpPacket packet, TcpEndpoint source, TcpEndpoint destination, out Direction direction)

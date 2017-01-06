@@ -50,6 +50,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConnectionOpenedEventArgs.cs" />
+    <Compile Include="PacketProcessedEventArgs.cs" />
     <Compile Include="TcpCapturer.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="Direction.cs" />
