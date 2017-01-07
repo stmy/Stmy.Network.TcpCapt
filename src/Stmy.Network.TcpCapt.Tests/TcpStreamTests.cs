@@ -130,6 +130,7 @@ namespace Stmy.Network.TcpCapt.Tests
             var packets = CreateSequentialPacket(testStrings);
 
             var stream = new TcpStream();
+            stream.FragmentTimeout = 1000;
             stream.Process(packets[0]);
             stream.Process(packets[2]);
             Thread.Sleep(3000);

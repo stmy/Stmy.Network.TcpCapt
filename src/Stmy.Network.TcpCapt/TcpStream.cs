@@ -144,7 +144,9 @@ namespace Stmy.Network.TcpCapt
         {
             Trace.WriteLine($"Waiting for packet: {nextSeq}");
             timeoutEvent.Reset();
-            if (!timeoutEvent.WaitOne(FragmentTimeout ?? 1000)) // TODO: Set timeout based on RTT
+            if (FragmentTimeout.HasValue
+                    ? !timeoutEvent.WaitOne(FragmentTimeout.Value)
+                    : !timeoutEvent.WaitOne()) // TODO: Set timeout based on RTT
             {
                 Trace.WriteLine($"Timed out for: {nextSeq}");
 
@@ -213,6 +215,7 @@ namespace Stmy.Network.TcpCapt
             base.Dispose(disposing);
             lock (lockObj)
             {
+                timeoutEvent.Set();
                 timeoutEvent.Dispose();
                 fragments.Clear();
                 lock (buffer)
