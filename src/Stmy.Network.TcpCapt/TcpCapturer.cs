@@ -5,6 +5,10 @@ using PacketDotNet;
 
 namespace Stmy.Network.TcpCapt
 {
+    /// <summary>
+    /// Provides functionality of TCP data stream capturing for specific process.
+    /// </summary>
+    /// <seealso cref="System.IDisposable" />
     public class TcpCapturer : IDisposable
     {
         bool firstTime;
@@ -13,9 +17,22 @@ namespace Stmy.Network.TcpCapt
         List<Connection> connections;
         List<SocketOwnerInfo> socketInfoes;
 
+        /// <summary>
+        /// Occurs when new connection has opened.
+        /// </summary>
         public event EventHandler<ConnectionOpenedEventArgs> ConnectionOpened;
+
+        /// <summary>
+        /// Occurs when packet has processed.
+        /// </summary>
         public event EventHandler<PacketProcessedEventArgs> PacketProcessed;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TcpCapturer"/> class.
+        /// </summary>
+        /// <param name="targetProcessId">The target process to capture.</param>
+        /// <param name="service">The capturing service.</param>
+        /// <exception cref="System.ArgumentNullException">Throws when <paramref name="service"/> is <c>null</c>.</exception>
         public TcpCapturer(int targetProcessId, ICapturingService service)
         {
             if (service == null) { throw new ArgumentNullException(nameof(service)); }
@@ -27,17 +44,26 @@ namespace Stmy.Network.TcpCapt
             this.socketInfoes = new List<SocketOwnerInfo>();
         }
 
+        /// <summary>
+        /// Starts the capturing.
+        /// </summary>
         public void Start()
         {
             firstTime = true;
             service.StartCapture();
         }
 
+        /// <summary>
+        /// Stops the capturing.
+        /// </summary>
         public void Stop()
         {
             service.StopCapture();
         }
 
+        /// <summary>
+        /// Stops the capturing and disposes resources.
+        /// </summary>
         public void Dispose()
         {
             service.Captured -= OnCaptured;

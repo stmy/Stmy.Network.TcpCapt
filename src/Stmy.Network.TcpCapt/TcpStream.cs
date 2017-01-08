@@ -9,6 +9,10 @@ using PacketDotNet;
 
 namespace Stmy.Network.TcpCapt
 {
+    /// <summary>
+    /// Represents TCP data stream.
+    /// </summary>
+    /// <seealso cref="System.IO.Stream" />
     public class TcpStream : Stream
     {
         uint nextSeq;
@@ -22,9 +26,19 @@ namespace Stmy.Network.TcpCapt
         readonly AutoResetEvent timeoutEvent;
         readonly object lockObj = new object();
 
+        /// <summary>
+        /// Milliseconds wait for missing fragmented TCP packets. Infinite when not set.
+        /// </summary>
         internal int? FragmentTimeout { get; set; }
+
+        /// <summary>
+        /// Occurs when timed out for waiting missing fragmented TCP packets.
+        /// </summary>
         public event EventHandler TimedOut;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TcpStream"/> class.
+        /// </summary>
         public TcpStream()
         {
             nextSeq = 0;
@@ -38,6 +52,14 @@ namespace Stmy.Network.TcpCapt
             timeoutEvent = new AutoResetEvent(false);
         }
 
+        /// <summary>
+        /// Process TCP packet and write data into stream when payload is available.
+        /// </summary>
+        /// <param name="packet">TCP packet to process.</param>
+        /// <param name="useChecksum">
+        ///     Validate packet with checksum when true. 
+        ///     Do nothing when validation failed.
+        /// </param>
         internal void Process(TcpPacket packet, bool useChecksum = true)
         {
             if (packet == null) { throw new ArgumentNullException(nameof(packet)); }
@@ -81,6 +103,15 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Calculate stream offset between packet's sequence number and expected next sequence number.
+        /// </summary>
+        /// <param name="packet">TCP packet to calculate stream offset.</param>
+        /// <returns>
+        ///     Stream offset of the packet.
+        ///     Positive value represents when packet is fragmented and negative value represents
+        ///     the packet is retransmitted.
+        /// </returns>
         int CalculateOffset(TcpPacket packet)
         {
             long offset = packet.SequenceNumber - (long)nextSeq;
@@ -102,6 +133,11 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Process retransmitted TCP packet.
+        /// </summary>
+        /// <param name="packet">TCP packet to process.</param>
+        /// <param name="offset">Offset value of the packet calculated with <see cref="CalculateOffset"/> method.</param>
         void ProcessRetransmissionPacket(TcpPacket packet, int offset)
         {
             // Read payload when packet contains subsequent data
@@ -116,6 +152,10 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Process fragmented TCP packet.
+        /// </summary>
+        /// <param name="packet">TCP packet to process.</param>
         void ProcessFragmentedPacket(TcpPacket packet)
         {
             if (!fragments.ContainsKey(packet.SequenceNumber))
@@ -140,6 +180,9 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Wait for missing packet.
+        /// </summary>
         void WaitForNextPacket()
         {
             Trace.WriteLine($"Waiting for packet: {nextSeq}");
@@ -167,6 +210,10 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Process regular TCP packet.
+        /// </summary>
+        /// <param name="packet">TCP packet to process.</param>
         void ProcessRegularPacket(TcpPacket packet)
         {
             timeoutEvent.Set();
@@ -175,6 +222,14 @@ namespace Stmy.Network.TcpCapt
             ReadPayload(packet);
         }
 
+        /// <summary>
+        /// Read payload of given packet and read subsequent packets if exists in the buffer.
+        /// </summary>
+        /// <param name="packet">TCP packet to read.</param>
+        /// <param name="bytesToSkip">
+        ///     Bytes to skip. 
+        ///     Use this parameter when read payload of packets retransmitted with subsequent data.
+        /// </param>
         void ReadPayload(TcpPacket packet, int bytesToSkip = 0)
         {
             var cur = packet;
@@ -198,6 +253,11 @@ namespace Stmy.Network.TcpCapt
             }
         }
 
+        /// <summary>
+        /// Try to consume subsequent packet in the buffer.
+        /// </summary>
+        /// <param name="seq"></param>
+        /// <returns>Subsequent packet when exist in the buffer, otherwise <c>null</c>.</returns>
         TcpPacket ConsumeFragmentOrNull(uint seq)
         {
             TcpPacket packet;
@@ -210,6 +270,10 @@ namespace Stmy.Network.TcpCapt
             return packet;
         }
 
+        /// <summary>
+        /// Releases the unmanaged resources used by the <see cref="T:System.IO.Stream" /> and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -228,47 +292,117 @@ namespace Stmy.Network.TcpCapt
 
         #region System.IO.Stream implementation
 
+        /// <summary>
+        /// Gets a value indicating whether the current stream supports reading.
+        /// </summary>
         public override bool CanRead
         {
             get { return true; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the current stream supports seeking.
+        /// </summary>
         public override bool CanSeek
         {
             get { return false; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the current stream supports writing.
+        /// </summary>
         public override bool CanWrite
         {
             get { return false; }
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
         public override long Length
         {
             get { throw new NotSupportedException(); }
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException">
+        /// </exception>
         public override long Position
         {
             get { throw new NotSupportedException(); }
             set { throw new NotSupportedException(); }
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
         public override void Flush()
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <param name="offset">A byte offset relative to the <paramref name="origin" /> parameter.</param>
+        /// <param name="origin">A value of type <see cref="T:System.IO.SeekOrigin" /> indicating the reference point used to obtain the new position.</param>
+        /// <returns>
+        /// The new position within the current stream.
+        /// </returns>
+        /// <exception cref="System.NotSupportedException"></exception>
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <param name="value">The desired length of the current stream in bytes.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
         public override void SetLength(long value)
         {
             throw new NotSupportedException();
         }
 
+        /// <summary>
+        ///     Reads a sequence of bytes from the current stream and advances the position 
+        ///     within the stream by the number of bytes read.
+        /// </summary>
+        /// 
+        /// <param name="buffer">
+        ///     An array of bytes. 
+        ///     When this method returns, the buffer contains the specified byte array with the values between 
+        ///     <paramref name="offset" /> and (<paramref name="offset" /> + <paramref name="count" /> - 1) replaced by the bytes read from the current source.
+        /// </param>
+        /// <param name="offset">
+        ///     The zero-based byte offset in <paramref name="buffer" /> at which to begin storing the data read from the current stream.
+        /// </param>
+        /// <param name="count">
+        ///     The maximum number of bytes to be read from the current stream.
+        /// </param>
+        /// 
+        /// <returns>
+        ///     The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.
+        /// </returns>
+        /// 
+        /// <exception cref="System.ArgumentNullException">
+        ///     Throws when <paramref name="buffer"/> is <c>null</c>.
+        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        ///     Throws when <paramref name="offset"/> parameter is negative and/or <paramref name="count"/> parameter is negative.
+        /// </exception>
+        /// <exception cref="System.ArgumentException">
+        ///     Throws when sum of <paramref name="offset"/> and <paramref name="count"/> is 
+        ///     larger than the <paramref name="buffer"/>'s length.
+        /// </exception>
+        /// <exception cref="System.ObjectDisposedException">
+        ///     Throws when the stream is disposed already.
+        /// </exception>
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null) { throw new ArgumentNullException(nameof(buffer)); }
@@ -305,6 +439,13 @@ namespace Stmy.Network.TcpCapt
             return bytesReaded;
         }
 
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <param name="buffer">An array of bytes. This method copies <paramref name="count" /> bytes from <paramref name="buffer" /> to the current stream.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin copying bytes to the current stream.</param>
+        /// <param name="count">The number of bytes to be written to the current stream.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException();

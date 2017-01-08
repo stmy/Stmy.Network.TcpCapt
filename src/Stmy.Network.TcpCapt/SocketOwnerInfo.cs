@@ -4,6 +4,9 @@ using static Stmy.Network.TcpCapt.Win32.IpHlpApi;
 
 namespace Stmy.Network.TcpCapt
 {
+    /// <summary>
+    /// Represents TCP socket owner process information.
+    /// </summary>
     class SocketOwnerInfo
     {
         public TcpEndpoint Local { get; }

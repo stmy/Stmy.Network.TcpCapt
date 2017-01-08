@@ -5,6 +5,10 @@ using PacketDotNet;
 
 namespace Stmy.Network.TcpCapt.CapturingServices
 {
+    /// <summary>
+    /// Provides packet capturing function for single network interface.
+    /// </summary>
+    /// <seealso cref="System.IDisposable" />
     class PromiscuousSocketCapturer : IDisposable
     {
         static readonly byte[] FakeEthernetHeaderV4 =
@@ -25,8 +29,17 @@ namespace Stmy.Network.TcpCapt.CapturingServices
         readonly byte[] buffer;
         readonly byte[] fakeEthernetHeader;
 
+        /// <summary>
+        /// Occurs when packet is captured.
+        /// </summary>
         public event EventHandler<PacketCapturedEventArgs> Captured;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PromiscuousSocketCapturer"/> class.
+        /// </summary>
+        /// <param name="address">The address of network interface to capture.</param>
+        /// <exception cref="System.ArgumentNullException">Throws when <paramref name="address"/> is <c>null</c></exception>
+        /// <exception cref="System.ArgumentException">Throws when <see cref="AddressFamily"/> of <paramref name="address"/> is not supported.</exception>
         public PromiscuousSocketCapturer(IPAddress address)
         {
             if (address == null) { throw new ArgumentNullException(nameof(address)); }
@@ -83,6 +96,9 @@ namespace Stmy.Network.TcpCapt.CapturingServices
             }
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             socket.Close();
